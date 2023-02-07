@@ -16,8 +16,11 @@ class InsiderUpdates:
                 # Calculate the value of the transaction
                 trans_value = item['cost'] * item['trans_share']
                 # Only include transactions with value greater than the lower bound
+
                 if trans_value >= value_lower_bound:
                     filtered_data.append(item)
+                trans_value = '{:,.2f}'.format(trans_value)
+                item['total_value'] = trans_value
         return filtered_data
 
     def get_data(self, date: str = None):
@@ -58,7 +61,7 @@ def main():
 
     date = datetime.now().date()
     filtered_data_list = []
-    for i in range(7):
+    for i in range(2):
         data = insider_updates.get_data(date.strftime('%Y-%m-%d'))
         filtered_data = insider_updates.filter_by_value(data, 200000)
         filtered_data_list.append(filtered_data)
