@@ -1,6 +1,10 @@
 import requests
 import json
 from datetime import datetime, timedelta
+import pandas as pd
+import os
+import openpyxl
+
 
 class InsiderUpdates:
     def __init__(self, api_token: str, symbol: str):
@@ -53,6 +57,30 @@ def open_link(symbol):
     link += "+stock"
     return link
 
+
+def export_to_excel(data):
+    # Create a new workbook
+    workbook = openpyxl.Workbook()
+
+    # Select the active worksheet
+    worksheet = workbook.active
+
+    # Write the header row
+    worksheet.append(["Symbol", "Exchange", "Position", "Date", "Type", "Trans Share", "Final Share", "Price", "Cost", "Insider", "Total Value", "Link"])
+
+    # Write the data rows
+    for item in data:
+        worksheet.append([item["symbol"], item["exchange"], item["position"], item["date"], item["type"], item["trans_share"], item["final_share"], item["price"], item["cost"], item["insider"], item["total_value"], item["link"]])
+
+    # Make the Link column a hyperlink
+    for row in worksheet.iter_rows(min_row=2, max_row=worksheet.max_row, min_col=12, max_col=12):
+        for cell in row:
+            cell.hyperlink = cell.value
+            cell.value = f"{cell.value}"
+
+    # Save the workbook
+    workbook.save("insider_updates.xlsx")
+
 def main():
     with open("api_token.txt", "r") as f:
         api_token = f.read().strip()
@@ -73,7 +101,7 @@ def main():
 
     print(f"Number of transactions found: {len(combined_response)}")
     print(json.dumps(combined_response, indent=4))
-
+    export_to_excel(combined_response)
 
 if __name__ == '__main__':
     main()
