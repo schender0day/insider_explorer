@@ -2,7 +2,6 @@ import requests
 import json
 from datetime import datetime, timedelta
 
-
 class InsiderUpdates:
     def __init__(self, api_token: str, symbol: str):
         self.api_token = api_token
@@ -45,6 +44,12 @@ def combine_responses(responses):
         combined_response += response
     return combined_response
 
+def open_link(symbol):
+    symbol = symbol.split(":")[1]
+    link = f"https://www.google.com/search?q={symbol}"
+    link += "+stock"
+    return link
+
 def main():
     with open("api_token.txt", "r") as f:
         api_token = f.read().strip()
@@ -53,13 +58,16 @@ def main():
 
     date = datetime.now().date()
     filtered_data_list = []
-    for i in range(5):
+    for i in range(7):
         data = insider_updates.get_data(date.strftime('%Y-%m-%d'))
         filtered_data = insider_updates.filter_by_value(data, 200000)
         filtered_data_list.append(filtered_data)
         date -= timedelta(days=1)
 
     combined_response = combine_responses(filtered_data_list)
+    for item in combined_response:
+        item['link'] = open_link(item['symbol'])
+
     print(f"Number of transactions found: {len(combined_response)}")
     print(json.dumps(combined_response, indent=4))
 
