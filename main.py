@@ -58,13 +58,13 @@ def get_rank_profitability(api_token, symbol):
     endpoint = f'https://api.gurufocus.com/public/user/{api_token}/stock/{symbol}/summary'
     response = requests.get(endpoint)
     data = response.json()['summary']['general']
-
-
     rank_profitability = data['rank_profitability']
     rank_financial_strength = data['rank_profitability']
     rank_gf_value = data['rank_gf_value']
+    cur_price = data['price']
+    rank_momentum = data['rank_momentum']
 
-    return rank_profitability, rank_financial_strength, rank_gf_value
+    return rank_profitability, rank_financial_strength, rank_gf_value, cur_price
 
 
 def open_link(symbol):
@@ -73,29 +73,18 @@ def open_link(symbol):
     link += "+stock"
     return link
 
-
 def export_to_excel(data):
-    # Create a new workbook
     workbook = openpyxl.Workbook()
-
-    # Select the active worksheet
     worksheet = workbook.active
-
-    # Write the header row
-    worksheet.append(["Symbol", "Exchange", "Position", "Date", "Type", "Trans Share", "Final Share", "Price", "Cost", "Insider", "Link"])
-
-    # Write the data rows
+    worksheet.append(["Symbol", "Exchange", "Position", "Date", "Type", "Trans Share", "Final Share", "Price", "Cost", "Insider", "Link", "Rank Profitability", "Rank Financial Strength", "Rank GF Value", "Current Price", "Increased By (%)"])
     for item in data:
-        worksheet.append([item["symbol"], item["exchange"], item["position"], item["date"], item["type"], item["trans_share"], item["final_share"], item["price"], item["cost"], item["insider"], item["link"]])
-
-    # Make the Link column a hyperlink
+        worksheet.append([item["symbol"], item["exchange"], item["position"], item["date"], item["type"], item["trans_share"], item["final_share"], item["price"], item["cost"], item["insider"], item["link"], item["rank_profitability"], item["rank_financial_strength"], item["rank_gf_value"], item["cur_price"], item["increased_by"]])
     for row in worksheet.iter_rows(min_row=2, max_row=worksheet.max_row, min_col=12, max_col=12):
         for cell in row:
             cell.hyperlink = cell.value
             cell.value = f"{cell.value}"
-
-    # Save the workbook
     workbook.save("insider_updates.xlsx")
+
 
 
 def main():
@@ -122,7 +111,7 @@ def get_api_token(file_path):
 def get_filtered_data_list(insider_updates):
     date = datetime.now().date()
     filtered_data_list = []
-    for i in range(10):
+    for i in range(60):
         data = insider_updates.get_data(date.strftime('%Y-%m-%d'))
         filtered_data = insider_updates.filter_by_value(data, 200000)
         filtered_data_list.append(filtered_data)
@@ -136,8 +125,11 @@ def process_response(response, api_token):
         item['link'] = open_link(item['symbol'])
         symbol = item['symbol'].split(":")[1]
         rank_profitability = get_rank_profitability(api_token, symbol)
-        item['rank_profitability'], item['rank_financial_strength'], item['rank_gf_value'] = rank_profitability
-        processed_response.append(item)
+        item['rank_profitability'], item['rank_financial_strength'], item['rank_gf_value'], item['cur_price']= rank_profitability
+        item['increased_by'] = round(100 * (float(item['cur_price']) - float(item['price'])) / float(item['price']), 2)
+
+        if int(item['rank_profitability']) + int(item['rank_financial_strength']) + int(item['rank_gf_value']) >= 23:
+            processed_response.append(item)
     return processed_response
 
 
